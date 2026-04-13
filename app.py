@@ -36,36 +36,34 @@ st.markdown('<div class="main-header">✈️ Análisis de Interrupciones Aéreas
 
 # 1. Función para Cargar los Datos (Extracción y Transformación)
 @st.cache_data
-def load_data():
-    try:
-        # Se asume que el archivo base existe, se lee y se aplican las correcciones del notebook
-        df = pd.read_csv("airline_losses_estimate.csv")
-    except FileNotFoundError:
-        # Si no está, podemos crear un mock para demostración del funcionamiento o lanzar un error claro
-        st.error("No se encontró el archivo 'airline_losses_estimate.csv' en el directorio.")
-        return pd.DataFrame()
+def transform_data(df_raw):
+    df_clean = df_raw.dropna().copy()
+    
+    # Verificamos si ya está limpio (en caso de que suban cleaned_dataset.csv)
+    if "impact_level" not in df_clean.columns:
+        df_clean["cancelled_flights"] = df_clean["cancelled_flights"].astype(int)
+        df_clean["passengers_impacted"] = df_clean["passengers_impacted"].astype(int)
         
-    # Limpieza (dropna)
-    df = df.dropna()
-    
-    # Conversiones
-    df["cancelled_flights"] = df["cancelled_flights"].astype(int)
-    df["passengers_impacted"] = df["passengers_impacted"].astype(int)
-    
-    # Variable Derivada
-    median_cancelled = df["cancelled_flights"].median()
-    df["impact_level"] = np.where(
-        df["cancelled_flights"] > median_cancelled,
-        "High Impact",
-        "Low Impact"
-    )
-    
-    return df
+        median_cancelled = df_clean["cancelled_flights"].median()
+        df_clean["impact_level"] = np.where(
+            df_clean["cancelled_flights"] > median_cancelled,
+            "High Impact",
+            "Low Impact"
+        )
+    return df_clean
 
-df = load_data()
-
-if df.empty:
-    st.stop()
+try:
+    df_raw = pd.read_csv("airline_losses_estimate.csv")
+    df = transform_data(df_raw)
+except FileNotFoundError:
+    st.warning("⚠️ No se encontró el archivo 'airline_losses_estimate.csv' en el directorio local.")
+    uploaded_file = st.file_uploader("Por favor sube tu dataset ('airline_losses_estimate.csv' o 'cleaned_dataset.csv') para continuar:", type=["csv"])
+    if uploaded_file is not None:
+        df_raw = pd.read_csv(uploaded_file)
+        df = transform_data(df_raw)
+    else:
+        st.info("La aplicación se encuentra en pausa hasta que se suban los datos.")
+        st.stop()
 
 # 2. Panel Lateral de Navegación / Filtros
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/325/325258.png", width=120)
