@@ -153,15 +153,15 @@ with tab2:
         )
         st.plotly_chart(fig_box, use_container_width=True)
         
-        # Bar Chart
-        airline_counts = df_filtered["airline"].value_counts().reset_index()
-        airline_counts.columns = ["airline", "count"]
+        # Bar Chart (ahora muestra las cancelaciones reales, no el conteo de filas, ordenado mayor a menor)
+        df_bar = df_filtered.sort_values(by="cancellations_count", ascending=False)
         fig_bar = px.bar(
-            airline_counts,
+            df_bar,
             x="airline",
-            y="count",
+            y="cancellations_count",
             color="airline",
-            title="Eventos de interrupción por aerolínea"
+            title="Vuelos cancelados totales por aerolínea",
+            labels={"cancellations_count": "Cancelaciones"}
         )
         st.plotly_chart(fig_bar, use_container_width=True)
     else:
